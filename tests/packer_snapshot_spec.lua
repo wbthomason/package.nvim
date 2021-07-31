@@ -1,32 +1,31 @@
-local a = require('plenary.async_lib.tests')
-local with = require('plenary.context_manager').with
-local open = require('plenary.context_manager').open
-local path = require('plenary.path')
-local strings = require('plenary.strings')
-local describe = require('plenary.busted').describe
-local it = require('plenary.busted').it
-local await = require('packer.async').wait
-local async = require('packer.async').sync
-local packer = require("packer")
-local log = require "packer.log"
-local use = packer.use
-local fmt = string.format
+local it          = require('plenary.busted').it
+local before_each = require("plenary.busted").before_each
+local describe    = require('plenary.busted').describe
+local path        = require('plenary.path')
+local a           = require('plenary.async_lib.tests')
+
+local await       = require('packer.async').wait
+local fmt         = string.format
+local packer      = require('packer')
+local use         = packer.use
 
 local config = {
     snapshot_path = vim.fn.stdpath("cache") .. "/" .. "packer",
     display = {
         non_interactive = true,
         open_cmd = '65vnew \\[packer\\]',
-        }
+    }
 }
 
 local spec = {'wbthomason/packer.nvim'}
 
+local cache_path = path:new(config.snapshot_path)
+vim.fn.mkdir(tostring(cache_path), "p")
+
 a.describe('Packer testing ', function ()
     local snapshot_name = "test"
-    local test_path = config.snapshot_path .. "/" .. snapshot_name
+    local test_path = path:new(config.snapshot_path .. "/" .. snapshot_name)
     local snapshot = require 'packer.snapshot'
-    local p = path:new(test_path)
 
     before_each(function ()
         local _packer = packer.startup(function ()
@@ -35,34 +34,43 @@ a.describe('Packer testing ', function ()
         _packer.__manage_all()
     end)
 
+--    a.describe("Testing git.get_rev()", function ()
+--        it("get_rev of existing package", function ()
+--            assert.True(true, true)
+--        end)
+--    end)
     a.describe('packer.snapshot()', function ()
-        a.it(fmt("create snapshot with installed plugins'%s'", test_path), function ()
-            await(snapshot(test_path, {spec}))
-            assert.True(p:exists())
-        end)
-
-        after_each(function ()
-            p:rm()
+        a.it(fmt("create snapshot with installed plugins'%s' and compare snapshot rev with actual", test_path), function ()
+            print(test_path)
+            await(snapshot(tostring(test_path), {spec}))
+            --await(packer.snapshot(snapshot_name))
+            assert.True(test_path:exists())
+--            local rev = 'c8c0600'
+--            local line = with(open(test_path), function (read)
+--                    return read:read()
+--                end)
+--            assert.equals(rev, line)
+--            print(vim.inspect(line))
         end)
     end)
 
-    a.describe('packer.rollback()', function ()
-        a.it(fmt("restore plugin to previous state"), function ()
-            local rev = 'c8c0600'
-            with(open(test_path, 'w+'), function (file)
-                file:write(fmt("%s %s", "packer.nvim", rev))
-            end)
-
-            packer.rollback(snapshot_name)
-            p:rm()
-            assert.False(p:exists())
-            await(snapshot(test_path, {spec}))
+--    a.describe('packer.rollback()', function ()
+--        a.it(fmt("restore plugin to previous state"), function ()
+--            local rev = 'c8c0600'
+--            with(open(test_path, 'w+'), function (file)
+--                file:write(fmt("%s %s", "packer.nvim", rev))
+--            end)
+--
+--            packer.rollback(snapshot_name)
+--            p:rm()
+--            assert.False(p:exists())
+--            await(snapshot(test_path, {spec}))
 --
 --            local res = with(open(test_path), function (file)
 --                return strings.strcharpart(file:read(), 11)
 --            end)
-
-            assert.equal(rev, res)
-        end)
-    end)
+--
+--            assert.equal(rev, res)
+--        end)
+--    end)
 end)
