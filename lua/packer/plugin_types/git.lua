@@ -58,26 +58,31 @@ git.cfg = function(_config)
   ensure_git_env()
 end
 
----Gets HEAD commit's hash for `plugin`, nil if the plugin in not installed
+---Gets HEAD commit's hash for `plugin`, nil if `plugin` is not installed
 ---@param plugin Plugin
 ---@return string
 local get_rev = function(plugin)
   local plugin_name = util.get_plugin_full_name(plugin)
   local get_rev_cmd = config.exec_cmd .. fmt(config.subcommands.get_rev, plugin.install_path)
   return async(function()
-    local rev = await(jobs.run(get_rev_cmd, { capture_output = true }))
-      :map_ok(function(ok)
-        return ok.output.data.stdout[1]
-      end)
-      :map_err(function(err)
-        if not err.msg then
-          return {
-            msg = fmt('Error getting commit from %s: %s', plugin_name, table.concat(err, '\n')),
-            data = err,
-          }
-        end
-        return err
-      end)
+  --  local rev = await(jobs.run(get_rev_cmd, { capture_output = true }))
+  --    :map_ok(function(ok)
+  --      return ok.output.data.stdout[1]
+  --    end)
+  --    :map_err(function(err)
+  --      if not err.msg then
+  --        return {
+  --          msg = fmt('Error getting commit from %s: %s', plugin_name, table.concat(err, '\n')),
+  --          data = err,
+  --        }
+  --      end
+  --      return err
+  --    end)
+    local rev = await(jobs.run(get_rev_cmd, { capture_output = true })):map_ok(function (ok)
+      local _, rev = next(ok.output.data.stdout)
+      return rev
+    end)
+    rev = rev.ok
     return rev
   end)
 end
@@ -453,11 +458,12 @@ git.setup = function(plugin)
     return r
   end
 
+---Returns `self` HEAD's short hash
+---@return string
   plugin.get_rev = function()
     return async(function()
-      return await(get_rev(plugin)):map_ok(function(ok)
-        return ok
-      end)
+      local res = await(get_rev(plugin))
+      return res
     end)
   end
 end
