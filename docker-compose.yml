@@ -1,0 +1,7 @@
+version: '3.8'
+services:
+  neovim_test:
+    build:
+      context: .
+    volumes:
+      - .:/app

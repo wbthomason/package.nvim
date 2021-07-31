@@ -2,6 +2,7 @@ local util = require 'packer.util'
 local jobs = require 'packer.jobs'
 local a = require 'packer.async'
 local result = require 'packer.result'
+local log = require 'packer.log'
 local await = a.wait
 local async = a.sync
 local fmt = string.format
@@ -74,7 +75,9 @@ local get_rev = function(plugin)
         error(msg)
         return ""
       end)
-    return rev
+    log.info(fmt("install_path = %s", vim.inspect(plugin.install_path)))
+    log.info(fmt("rev = %s", vim.inspect(rev)))
+    return rev.ok
   end)
 end
 
