@@ -65,24 +65,15 @@ local get_rev = function(plugin)
   local plugin_name = util.get_plugin_full_name(plugin)
   local get_rev_cmd = config.exec_cmd .. fmt(config.subcommands.get_rev, plugin.install_path)
   return async(function()
-  --  local rev = await(jobs.run(get_rev_cmd, { capture_output = true }))
-  --    :map_ok(function(ok)
-  --      return ok.output.data.stdout[1]
-  --    end)
-  --    :map_err(function(err)
-  --      if not err.msg then
-  --        return {
-  --          msg = fmt('Error getting commit from %s: %s', plugin_name, table.concat(err, '\n')),
-  --          data = err,
-  --        }
-  --      end
-  --      return err
-  --    end)
-    local rev = await(jobs.run(get_rev_cmd, { capture_output = true })):map_ok(function (ok)
-      local _, rev = next(ok.output.data.stdout)
-      return rev
-    end)
-    rev = rev.ok
+    local rev = await(jobs.run(get_rev_cmd, { capture_output = true })):
+      map_ok(function (ok)
+        local _, rev = next(ok.output.data.stdout)
+        return rev
+    end):map_err(function (err)
+        local _, msg = fmt("%s: %s",plugin_name,next(err.output.data.stderr))
+        error(msg)
+        return ""
+      end)
     return rev
   end)
 end
@@ -109,19 +100,19 @@ local handle_checkouts = function(plugin, dest, disp)
         disp:task_update(plugin_name, fmt('checking out %s %s...', plugin.branch and 'branch' or 'tag', branch_or_tag))
       end
       r
-        :and_then(await, jobs.run(config.exec_cmd .. fmt(config.subcommands.checkout, branch_or_tag), opts))
-        :map_err(function(err)
-          return {
-            msg = fmt(
-              'Error checking out %s %s for %s',
-              plugin.branch and 'branch' or 'tag',
-              branch_or_tag,
-              plugin_name
-            ),
-            data = err,
-            output = output,
-          }
-        end)
+      :and_then(await, jobs.run(config.exec_cmd .. fmt(config.subcommands.checkout, branch_or_tag), opts))
+      :map_err(function(err)
+        return {
+          msg = fmt(
+            'Error checking out %s %s for %s',
+            plugin.branch and 'branch' or 'tag',
+            branch_or_tag,
+            plugin_name
+          ),
+          data = err,
+          output = output,
+        }
+      end)
     end
 
     if plugin.commit then
@@ -129,14 +120,14 @@ local handle_checkouts = function(plugin, dest, disp)
         disp:task_update(plugin_name, fmt('checking out %s...', plugin.commit))
       end
       r
-        :and_then(await, jobs.run(config.exec_cmd .. fmt(config.subcommands.checkout, plugin.commit), opts))
-        :map_err(function(err)
-          return {
-            msg = fmt('Error checking out commit %s for %s', plugin.commit, plugin_name),
-            data = err,
-            output = output,
-          }
-        end)
+      :and_then(await, jobs.run(config.exec_cmd .. fmt(config.subcommands.checkout, plugin.commit), opts))
+      :map_err(function(err)
+        return {
+          msg = fmt('Error checking out commit %s for %s', plugin.commit, plugin_name),
+          data = err,
+          output = output,
+        }
+      end)
     end
 
     return r
@@ -219,29 +210,29 @@ git.setup = function(plugin)
       if plugin.commit then
         disp:task_update(plugin_name, fmt('checking out %s...', plugin.commit))
         r
-          :and_then(await, jobs.run(config.exec_cmd .. fmt(config.subcommands.checkout, plugin.commit), installer_opts))
-          :map_err(function(err)
-            return {
-              msg = fmt('Error checking out commit %s for %s', plugin.commit, plugin_name),
-              data = { err, output },
-            }
-          end)
+        :and_then(await, jobs.run(config.exec_cmd .. fmt(config.subcommands.checkout, plugin.commit), installer_opts))
+        :map_err(function(err)
+          return {
+            msg = fmt('Error checking out commit %s for %s', plugin.commit, plugin_name),
+            data = { err, output },
+          }
+        end)
       end
 
       r
-        :and_then(await, jobs.run(commit_cmd, installer_opts))
-        :map_ok(function(_)
-          plugin.messages = output.data.stdout
-        end)
-        :map_err(function(err)
-          plugin.output = { err = output.data.stderr }
-          if not err.msg then
-            return {
-              msg = fmt('Error installing %s: %s', plugin_name, table.concat(output.data.stderr, '\n')),
-              data = { err, output },
-            }
-          end
-        end)
+      :and_then(await, jobs.run(commit_cmd, installer_opts))
+      :map_ok(function(_)
+        plugin.messages = output.data.stdout
+      end)
+      :map_err(function(err)
+        plugin.output = { err = output.data.stderr }
+        if not err.msg then
+          return {
+            msg = fmt('Error installing %s: %s', plugin_name, table.concat(output.data.stderr, '\n')),
+            data = { err, output },
+          }
+        end
+      end)
 
       return r
     end)
@@ -255,8 +246,8 @@ git.setup = function(plugin)
           { capture_output = true, cwd = plugin.install_path, options = { env = git.job_env } }
         )
       ):map_ok(function(data)
-        return { remote = data.output.data.stdout[1] }
-      end)
+          return { remote = data.output.data.stdout[1] }
+        end)
     end)
   end
 
@@ -279,35 +270,35 @@ git.setup = function(plugin)
           { success_test = exit_ok, capture_output = rev_callbacks, cwd = install_to, options = { env = git.job_env } }
         )
       ):map_err(function(err)
-        plugin.output = { err = vim.list_extend(update_info.err, update_info.revs), data = {} }
+          plugin.output = { err = vim.list_extend(update_info.err, update_info.revs), data = {} }
 
-        return {
-          msg = fmt('Error getting current commit for %s: %s', plugin_name, table.concat(update_info.revs, '\n')),
-          data = err,
-        }
-      end)
+          return {
+            msg = fmt('Error getting current commit for %s: %s', plugin_name, table.concat(update_info.revs, '\n')),
+            data = err,
+          }
+        end)
 
       local current_branch
       disp:task_update(plugin_name, 'checking current branch...')
       r
-        :and_then(
-          await,
-          jobs.run(
-            branch_cmd,
-            { success_test = exit_ok, capture_output = true, cwd = install_to, options = { env = git.job_env } }
-          )
+      :and_then(
+        await,
+        jobs.run(
+          branch_cmd,
+          { success_test = exit_ok, capture_output = true, cwd = install_to, options = { env = git.job_env } }
         )
-        :map_ok(function(ok)
-          current_branch = ok.output.data.stdout[1]
-        end)
-        :map_err(function(err)
-          plugin.output = { err = vim.list_extend(update_info.err, update_info.revs), data = {} }
+      )
+      :map_ok(function(ok)
+        current_branch = ok.output.data.stdout[1]
+      end)
+      :map_err(function(err)
+        plugin.output = { err = vim.list_extend(update_info.err, update_info.revs), data = {} }
 
-          return {
-            msg = fmt('Error checking current branch for %s: %s', plugin_name, table.concat(update_info.revs, '\n')),
-            data = err,
-          }
-        end)
+        return {
+          msg = fmt('Error checking current branch for %s: %s', plugin_name, table.concat(update_info.revs, '\n')),
+          data = err,
+        }
+      end)
 
       if not needs_checkout then
         local origin_branch = ''
@@ -363,33 +354,33 @@ git.setup = function(plugin)
       }
 
       r
-        :and_then(await, jobs.run(update_cmd, update_opts))
-        :and_then(await, jobs.run(submodule_cmd, update_opts))
-        :map_err(function(err)
-          plugin.output = { err = vim.list_extend(update_info.err, update_info.output), data = {} }
+      :and_then(await, jobs.run(update_cmd, update_opts))
+      :and_then(await, jobs.run(submodule_cmd, update_opts))
+      :map_err(function(err)
+        plugin.output = { err = vim.list_extend(update_info.err, update_info.output), data = {} }
 
-          return {
-            msg = fmt('Error pulling updates for %s: %s', plugin_name, table.concat(update_info.output, '\n')),
-            data = err,
-          }
-        end)
+        return {
+          msg = fmt('Error pulling updates for %s: %s', plugin_name, table.concat(update_info.output, '\n')),
+          data = err,
+        }
+      end)
 
       disp:task_update(plugin_name, 'checking updated commit...')
       r
-        :and_then(
-          await,
-          jobs.run(
-            rev_cmd,
-            { success_test = exit_ok, capture_output = rev_callbacks, cwd = install_to, options = { env = git.job_env } }
-          )
+      :and_then(
+        await,
+        jobs.run(
+          rev_cmd,
+          { success_test = exit_ok, capture_output = rev_callbacks, cwd = install_to, options = { env = git.job_env } }
         )
-        :map_err(function(err)
-          plugin.output = { err = vim.list_extend(update_info.err, update_info.revs), data = {} }
-          return {
-            msg = fmt('Error checking updated commit for %s: %s', plugin_name, table.concat(update_info.revs, '\n')),
-            data = err,
-          }
-        end)
+      )
+      :map_err(function(err)
+        plugin.output = { err = vim.list_extend(update_info.err, update_info.revs), data = {} }
+        return {
+          msg = fmt('Error checking updated commit for %s: %s', plugin_name, table.concat(update_info.revs, '\n')),
+          data = err,
+        }
+      end)
 
       if r.ok then
         if update_info.revs[1] ~= update_info.revs[2] then
@@ -458,8 +449,8 @@ git.setup = function(plugin)
     return r
   end
 
----Returns `self` HEAD's short hash
----@return string
+  ---Returns `self` HEAD's short hash
+  ---@return string
   plugin.get_rev = function()
     return async(function()
       local res = await(get_rev(plugin))
