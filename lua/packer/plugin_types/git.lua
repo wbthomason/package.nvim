@@ -6,6 +6,8 @@ local await = a.wait
 local async = a.sync
 local fmt = string.format
 
+local vim = vim
+
 ---@class Plugin
 ---@field 1 string
 ---@field commit string
@@ -21,9 +23,6 @@ local fmt = string.format
 ---@field type string
 ---@field opt boolean
 ---@field disable boolean
-
-local vim = vim
-
 local git = {}
 
 local blocked_env_vars = {
@@ -66,7 +65,7 @@ local get_rev = function(plugin)
   local plugin_name = util.get_plugin_full_name(plugin)
   local get_rev_cmd = config.exec_cmd .. fmt(config.subcommands.get_rev, plugin.install_path)
   return async(function()
-    local r = await(jobs.run(get_rev_cmd, { capture_output = true }))
+    local rev = await(jobs.run(get_rev_cmd, { capture_output = true }))
       :map_ok(function(ok)
         return ok.output.data.stdout[1]
       end)
@@ -79,7 +78,7 @@ local get_rev = function(plugin)
         end
         return err
       end)
-    return r
+    return rev
   end)
 end
 
