@@ -17,15 +17,17 @@ local config = {
     },
     start_dir = "../../"
 }
+
+local install_path = vim.fn.getcwd()
+
 mocked_plugin_utils.list_installed_plugins = function ()
-    return {['ceo'] = true}, {}
+    return {[install_path] = true}, {}
 end
 
 local old_require = _G.require
 
 _G.require = function (modname)
     if modname == 'plugin_utils' then
-        log.debug(fmt("modname = %s", modname))
         return mocked_plugin_utils
     end
 
@@ -43,15 +45,11 @@ a.describe('Packer testing ', function ()
     local snapshot = require 'packer.snapshot'
 
     before_each(function ()
---        local _packer = packer.startup(function ()
---            use(spec)
---        end)
---        _packer.__manage_all()
         packer.reset()
         packer.init(config)
         packer.use(spec)
         packer.__manage_all()
-        spec.install_path = vim.fn.getcwd()
+        spec.install_path = install_path
     end)
 
     a.describe('packer.snapshot()', function ()

@@ -34,13 +34,13 @@ local function do_snapshot(_, filename, plugins)
       if installed[plugin.install_path] ~= nil then -- this plugin is installed
         log.debug(fmt("Snapshotting '%s'", plugin.short_name))
         if plugin.type == plugin_utils.git_plugin_type then
-          local r = await(plugin.get_rev())
+          local rev = await(plugin.get_rev())
 
-          log.debug(vim.inspect(r))
-          if r == nil then
+          log.debug(vim.inspect(rev))
+          if rev == nil then
             log.warning(fmt('Snapshotting %s failed', plugin.short_name))
           else
-            snapshot_content = snapshot_content .. plugin.short_name .. ' ' .. r.ok .. '\n'
+            snapshot_content = snapshot_content .. plugin.short_name .. ' ' .. rev .. '\n'
           end
         end
       end
