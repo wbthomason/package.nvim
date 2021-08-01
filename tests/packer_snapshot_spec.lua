@@ -1,13 +1,11 @@
 local before_each = require('plenary.busted').before_each
 local path        = require('plenary.path')
 local a           = require('plenary.async_lib.tests')
-local log         = require('packer.log')
 local mocked_plugin_utils = require('packer.plugin_utils')
 
 local await       = require('packer.async').wait
 local fmt         = string.format
 local packer      = require('packer')
-local use         = packer.use
 
 local config = {
     snapshot_path = vim.fn.stdpath("cache") .. "/" .. "packer",
@@ -54,7 +52,7 @@ a.describe('Packer testing ', function ()
 
     a.describe('packer.snapshot()', function ()
         a.it(fmt("create snapshot with installed plugins'%s'", test_path), function ()
-            await(snapshot(snapshot_name, {spec}))
+            await(snapshot(tostring(test_path), {spec}))
             assert.True(test_path:exists())
 --            local rev = 'c8c0600'
 --            local line = with(open(test_path), function (read)

@@ -17,9 +17,11 @@ end
 ---@return function
 local function do_snapshot(_, filename, plugins)
   if type(plugins) ~= "table" then
-    plugins = { plugins }
+    return async(function () end)
   end
+
   return async(function()
+    log.debug(fmt("filename = %s", filename))
     local snapshot_content = ''
     local opt, start = plugin_utils.list_installed_plugins()
     local installed = {}
@@ -38,7 +40,9 @@ local function do_snapshot(_, filename, plugins)
 
           log.debug(vim.inspect(rev))
           if rev == nil then
-            log.warning(fmt('Snapshotting %s failed', plugin.short_name))
+            local msg = fmt('Snapshotting %s failed', plugin.short_name)
+            log.warn(msg)
+            error(msg)
           else
             snapshot_content = snapshot_content .. plugin.short_name .. ' ' .. rev .. '\n'
           end
@@ -47,8 +51,11 @@ local function do_snapshot(_, filename, plugins)
     end
 
     local file, err = io.open(filename, 'w+')
+    log.debug(fmt("file = %s", vim.inspect(file)))
+    log.debug(fmt("err = %s", vim.inspect(err)))
     if err then
-      log.err(err)
+      log.warn(err)
+      error(err)
     else
       file:write(snapshot_content)
     end
