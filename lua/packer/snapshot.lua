@@ -11,6 +11,7 @@ end
 
 ---Makes a snapshot of all plugins to the path specified by `filename`
 ---If there is already a snapshot it will be overwritten
+---Snapshotting work only with `git` plugins, other plugins will be ignored.
 ---@param filename string
 ---@param plugins Plugin[]
 ---@return function
@@ -25,19 +26,20 @@ local function do_snapshot(_, filename, plugins)
 
     for _, plugin in pairs(plugins) do
       if installed[plugin.install_path] ~= nil then -- this plugin is installed
-        log.info(fmt("Snapshotting '%s'", plugin.short_name))
-        local r = await(plugin.get_rev())
-        if r == nil then
-          log.warning(fmt('Snapshotting %s failed', plugin.short_name))
-        else
-          snapshot_content = snapshot_content .. plugin.short_name .. ' ' .. r.ok .. '\n'
+        log.debug(fmt("Snapshotting '%s'", plugin.short_name))
+        if plugin.type == plugin_utils.git_plugin_type then
+          local r = await(plugin.get_rev())
+          if r == nil then
+            log.warning(fmt('Snapshotting %s failed', plugin.short_name))
+          else
+            snapshot_content = snapshot_content .. plugin.short_name .. ' ' .. r.ok .. '\n'
+          end
         end
       end
     end
 
     local file, err = io.open(filename, 'w+')
     if err then
-      print(vim.inspect(err))
       log.err(err)
     else
       file:write(snapshot_content)
@@ -52,3 +54,5 @@ end
 local snapshot = setmetatable({ cfg = cfg }, { __call = do_snapshot })
 
 return snapshot
+
+-- vim:sw=2 ts=2 et
