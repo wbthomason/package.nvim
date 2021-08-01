@@ -167,10 +167,9 @@ packer.rollback = function(filename)
   end)()
 end
 
---- Initialize packer
----@param user_config Config?
 -- Forwards user configuration to sub-modules, resets the set of managed plugins, and ensures that
 -- the necessary package directories exist
+---@param user_config Config?
 packer.init = function(user_config)
   user_config = user_config or {}
   config = util.deep_extend('force', config, user_config)

@@ -16,6 +16,9 @@ end
 ---@param plugins Plugin[]
 ---@return function
 local function do_snapshot(_, filename, plugins)
+  if type(plugins) ~= "table" then
+    plugins = { plugins }
+  end
   return async(function()
     local snapshot_content = ''
     local opt, start = plugin_utils.list_installed_plugins()
@@ -25,12 +28,15 @@ local function do_snapshot(_, filename, plugins)
     for key, _ in pairs(start) do installed[key] = key end
 
     log.debug(vim.inspect(plugins))
+    log.debug(fmt("installed= %s", vim.inspect(installed)))
     for _, plugin in pairs(plugins) do
       log.debug(vim.inspect(plugin))
       if installed[plugin.install_path] ~= nil then -- this plugin is installed
         log.debug(fmt("Snapshotting '%s'", plugin.short_name))
         if plugin.type == plugin_utils.git_plugin_type then
           local r = await(plugin.get_rev())
+
+          log.debug(vim.inspect(r))
           if r == nil then
             log.warning(fmt('Snapshotting %s failed', plugin.short_name))
           else

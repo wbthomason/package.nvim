@@ -1,7 +1,8 @@
-local before_each = require("plenary.busted").before_each
+local before_each = require('plenary.busted').before_each
 local path        = require('plenary.path')
 local a           = require('plenary.async_lib.tests')
 local log         = require('packer.log')
+local mocked_plugin_utils = require('packer.plugin_utils')
 
 local await       = require('packer.async').wait
 local fmt         = string.format
@@ -13,8 +14,23 @@ local config = {
     display = {
         non_interactive = true,
         open_cmd = '65vnew \\[packer\\]',
-    }
+    },
+    start_dir = "../../"
 }
+mocked_plugin_utils.list_installed_plugins = function ()
+    return {['ceo'] = true}, {}
+end
+
+local old_require = _G.require
+
+_G.require = function (modname)
+    if modname == 'plugin_utils' then
+        log.debug(fmt("modname = %s", modname))
+        return mocked_plugin_utils
+    end
+
+    return old_require(modname)
+end
 
 local spec = {'wbthomason/packer.nvim'}
 
@@ -27,16 +43,20 @@ a.describe('Packer testing ', function ()
     local snapshot = require 'packer.snapshot'
 
     before_each(function ()
-        local _packer = packer.startup(function ()
-            use(spec)
-        end)
-        _packer.__manage_all()
+--        local _packer = packer.startup(function ()
+--            use(spec)
+--        end)
+--        _packer.__manage_all()
+        packer.reset()
+        packer.init(config)
+        packer.use(spec)
+        packer.__manage_all()
+        spec.install_path = vim.fn.getcwd()
     end)
 
     a.describe('packer.snapshot()', function ()
         a.it(fmt("create snapshot with installed plugins'%s'", test_path), function ()
-            log.info(vim.inspect(spec))
-            await(snapshot(snapshot_name))
+            await(snapshot(snapshot_name, {spec}))
             assert.True(test_path:exists())
 --            local rev = 'c8c0600'
 --            local line = with(open(test_path), function (read)
