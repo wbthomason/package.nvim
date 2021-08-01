@@ -1,8 +1,7 @@
-local it          = require('plenary.busted').it
 local before_each = require("plenary.busted").before_each
-local describe    = require('plenary.busted').describe
 local path        = require('plenary.path')
 local a           = require('plenary.async_lib.tests')
+local log         = require('packer.log')
 
 local await       = require('packer.async').wait
 local fmt         = string.format
@@ -35,8 +34,9 @@ a.describe('Packer testing ', function ()
     end)
 
     a.describe('packer.snapshot()', function ()
-        a.it(fmt("create snapshot with installed plugins'%s' and compare snapshot rev with actual", test_path), function ()
-            await(snapshot(tostring(test_path), {spec}))
+        a.it(fmt("create snapshot with installed plugins'%s'", test_path), function ()
+            log.info(vim.inspect(spec))
+            await(snapshot(snapshot_name))
             assert.True(test_path:exists())
 --            local rev = 'c8c0600'
 --            local line = with(open(test_path), function (read)

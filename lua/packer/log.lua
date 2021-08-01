@@ -38,8 +38,16 @@ local default_config = {
   -- Can limit the number of decimals displayed for floats
   float_precision = 0.01,
 }
+---@class Log
+---@field public debug fun(msg:string):void
+---@field public trace fun(msg:string):void
+---@field public info fun(msg:string):void
+---@field public warn fun(msg:string):void
+---@field public error fun(msg:string):void
+---@field public fatal fun(msg:string):void
 
 -- {{{ NO NEED TO CHANGE
+---@type Log
 local log = {}
 
 local unpack = unpack or table.unpack

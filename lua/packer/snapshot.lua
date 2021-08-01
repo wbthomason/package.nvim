@@ -24,7 +24,9 @@ local function do_snapshot(_, filename, plugins)
     for key, _ in pairs(opt) do installed[key] = key end
     for key, _ in pairs(start) do installed[key] = key end
 
+    log.debug(vim.inspect(plugins))
     for _, plugin in pairs(plugins) do
+      log.debug(vim.inspect(plugin))
       if installed[plugin.install_path] ~= nil then -- this plugin is installed
         log.debug(fmt("Snapshotting '%s'", plugin.short_name))
         if plugin.type == plugin_utils.git_plugin_type then
@@ -48,6 +50,7 @@ local function do_snapshot(_, filename, plugins)
     if file ~= nil then
       file:close()
     end
+    log.debug "Snapshot completed"
   end)
 end
 
