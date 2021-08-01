@@ -6,18 +6,17 @@ local a = require 'packer.async'
 local display = require 'packer.display'
 --dlocal handlers = require('packer.handlers')
 --dlocal install = require('packer.install')
-local log = require 'packer.log'
 --dlocal luarocks = require('packer.luarocks')
-local plugin_types = require 'packer.plugin_types'
-local plugin_utils = require 'packer.plugin_utils'
+--dlocal plugin_types = require 'packer.plugin_types'
+--dlocal plugin_utils = require 'packer.plugin_utils'
 local snapshot = require 'packer.snapshot'
 --dlocal update = require('packer.update')
 local util = require 'packer.util'
+local log = require 'packer.log'
 
 local join_paths = util.join_paths
 local stdpath = vim.fn.stdpath
 local update = require 'packer.update'
-local util = require 'packer.util'
 
 local async = a.sync
 local await = a.wait

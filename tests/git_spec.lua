@@ -3,7 +3,7 @@ local await = require('packer.async').wait
 local log = require('packer.log')
 local fmt = string.format
 
-local spec = { {'wbthomason/packer.nvim'} }
+local spec = {'wbthomason/packer.nvim'}
 
 a.describe("Packer testing git", function ()
     a.describe("get_rev()", function ()
@@ -23,7 +23,7 @@ a.describe("Packer testing git", function ()
             assert.True(res ~= "")
         end)
 
-        a.it("of non-existing plugin", function ()
+        a.it("of non-git plugin", function ()
             local packer = require("packer")
             local use = packer.use
             spec = { {'wbthomason/packer.nvim'}, { "not-valid-plugin" } }
@@ -31,13 +31,10 @@ a.describe("Packer testing git", function ()
                 use(spec)
             end)
             spec.install_path = "/not-valid-path"
+            spec[2].type = "local"
             _packer.__manage_all()
             log.info(fmt("spec = %s", vim.inspect(spec)))
-
-            local res = await(spec.get_rev())
-            log.info(fmt("res = %s", res))
-            log.info(vim.inspect(res))
-            assert.are.equals("", res)
+            assert.is_nil(spec[2].get_rev)
         end)
     end)
 end)
