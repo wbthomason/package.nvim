@@ -1,22 +1,11 @@
 -- TODO: Performance analysis/tuning
 -- TODO: Merge start plugins?
 local a = require 'packer.async'
---dlocal clean = require('packer.clean')
---dlocal compile = require('packer.compile')
-local display = require 'packer.display'
---dlocal handlers = require('packer.handlers')
---dlocal install = require('packer.install')
---dlocal luarocks = require('packer.luarocks')
-local plugin_types = require 'packer.plugin_types'
-local plugin_utils = require 'packer.plugin_utils'
-local snapshot = require 'packer.snapshot'
---dlocal update = require('packer.update')
 local util = require 'packer.util'
 local log = require 'packer.log'
 
 local join_paths = util.join_paths
 local stdpath = vim.fn.stdpath
-local update = require 'packer.update'
 
 local async = a.sync
 local await = a.wait
@@ -785,6 +774,8 @@ end
 ---@param snapshot_path string
 packer.snapshot = function(snapshot_path)
   async(function()
+
+    local snapshot = require 'packer.snapshot'
     manage_all_plugins()
     local fmt = string.format
     log.debug(fmt('Taking snapshots of currently installed plugins to %s...', snapshot_path))
