@@ -10,6 +10,7 @@ local fmt = string.format
 local vim = vim
 
 ---@class Plugin
+---@field [1] string @name of the plugin
 ---@field commit string
 ---@field diff string
 ---@field short_name string
