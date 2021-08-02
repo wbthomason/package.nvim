@@ -17,9 +17,8 @@ local config = {
     start_dir = "../../"
 }
 
---[[ For testing purposes the spec file is made up so that when running `packer` it could manage it as
-            -- if it was in `~/.local/share/nvim/site/pack/packer/start/`
---]]
+--[[ For testing purposes the spec file is made up so that when running `packer`
+it could manage it as if it was in `~/.local/share/nvim/site/pack/packer/start/` --]]
 local install_path = vim.fn.getcwd()
 
 mocked_plugin_utils.list_installed_plugins = function ()
