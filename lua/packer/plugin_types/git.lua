@@ -75,8 +75,6 @@ local get_rev = function(plugin)
         error(msg)
         return ""
       end)
-    log.info(fmt("install_path = %s", vim.inspect(plugin.install_path)))
-    log.info(fmt("rev = %s", vim.inspect(rev)))
     return rev.ok
   end)
 end

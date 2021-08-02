@@ -787,14 +787,12 @@ packer.snapshot = function(snapshot_path)
   async(function()
     manage_all_plugins()
     local fmt = string.format
+    log.debug(fmt('Taking snapshots of currently installed plugins to %s...', snapshot_path))
     if not util.is_absolute(snapshot_path) then
             snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
     end
-    log.info(string.format('Taking snapshots of currently installed plugins to %s...', snapshot_path))
---    await(a.main)
-    log.debug(fmt("plugins = %s", vim.inspect(plugins)))
     await(snapshot(snapshot_path, plugins))
-    log.info 'Snapshot complete'
+    log.debug('Snapshot complete')
 --    packer.on_complete() --not sure if it should fire packer.on_complete()
   end)()
 end
@@ -807,7 +805,6 @@ packer.delete = function (snapshot_path)
         if not util.is_absolute(snapshot_path) then
             snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
         end
-        log.info(vim.inspect(snapshot_path))
         return vim.fn.delete(snapshot_path) == 0
     end)()
 end
