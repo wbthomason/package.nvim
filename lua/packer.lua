@@ -118,13 +118,29 @@ local function require_and_configure(module_name)
   return module
 end
 
---- Instantly rolls back to a previous state specified by `filename`
----@param filename string
-packer.rollback = function(filename)
-  async(function()
+---Deletes the snapshot provided
+---@param snapshot_path string name of the snapshot or the absolute path
+---@return boolean true if success, false if failed
+packer.delete = function (snapshot_path)
+    async(function ()
+        if not util.is_absolute(snapshot_path) then
+            snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
+        end
+        log.info(vim.inspect(snapshot_path))
+        return vim.fn.delete(snapshot_path) == 0
+    end)()
+end
 
-    filename = util.join_paths(config.snapshot_path, filename)
-    local snapshotted_plugins = dofile(filename)
+---Instantly rolls back to a previous state specified by `filename`
+---If `filename` doesn't exist an error will be displayed
+---@param snapshot_path string name of the snapshot or the absolute path
+packer.rollback = function(snapshot_path)
+  async(function()
+    if not util.is_absolute(snapshot_path) then
+      snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
+    end
+
+    local snapshotted_plugins = dofile(snapshot_path)
     for _, plugin in pairs(plugins) do
       plugin.commit = snapshotted_plugins[plugin.short_name].commit
     end
@@ -194,7 +210,8 @@ end
 
 packer.make_commands = function()
   vim.cmd [[command! -nargs=+ PackerSnapshot  lua require('packer').snapshot(<q-args>)]]
-  vim.cmd [[command! -nargs=+ -complete=customlist,v:lua.require'packer'.rollback_complete PackerRollback  lua require('packer').rollback(<q-args>)]]
+  vim.cmd [[command! -nargs=+ -complete=customlist,v:lua.require'packer'.snapshot_complete PackerRollback  lua require('packer').rollback(<q-args>)]]
+  vim.cmd [[command! -nargs=+ -complete=customlist,v:lua.require'packer'.snapshot_complete PackerDelete lua require('packer').delete(<q-args>)]]
   vim.cmd [[command! PackerInstall           lua require('packer').install()]]
   vim.cmd [[command! PackerUpdate            lua require('packer').update()]]
   vim.cmd [[command! PackerSync              lua require('packer').sync()]]
@@ -819,7 +836,7 @@ end
 --- Completion for listing snapshots in `snapshot_path`
 --- Intended to provide completion for PackerRollback command
 --- TODO: using vim.fn.readdir to get entries the snapshot directory
-packer.rollback_complete = function(lead, _, _)
+packer.snapshot_complete = function(lead, _, _)
   local completion_list = {}
   local res = io.popen('ls ' .. config.snapshot_path, 'r')
   for entry in res:lines() do
