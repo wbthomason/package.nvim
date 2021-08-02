@@ -37,7 +37,7 @@ local function do_snapshot(_, filename, plugins)
         if plugin.type == plugin_utils.git_plugin_type then
           local rev = await(plugin.get_rev())
 
-          if rev == nil then
+          if rev == "" or rev == nil then
             local msg = fmt('Snapshotting %s failed', plugin.short_name)
             log.warn(msg)
             error(msg)
@@ -48,7 +48,6 @@ local function do_snapshot(_, filename, plugins)
       end
     end
     local snapshot = "return " .. vim.inspect(snapshot_plugins)
-
 --    local result = await(a.main(function ()
 --      return vim.fn.writefile({snapshot}, filename) == 0
 --    end))

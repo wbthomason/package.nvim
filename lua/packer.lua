@@ -52,7 +52,7 @@ local config_defaults = {
       diff = 'log --color=never --pretty=format:FMT --no-show-signature HEAD@{1}...HEAD',
       diff_fmt = '%%h %%s (%%cr)',
       git_diff_fmt = 'show --no-color --pretty=medium %s',
-      get_rev = 'rev-parse --short HEAD',
+      get_rev = '-C %s rev-parse --short HEAD',
       get_msg = 'log --color=never --pretty=format:FMT --no-show-signature HEAD -n 1',
       submodules = 'submodule update --init --recursive --progress',
       revert = 'reset --hard HEAD@{1}',
