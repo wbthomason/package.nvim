@@ -25,6 +25,7 @@ local function do_snapshot(_, filename, plugins)
 
   return async(function()
     log.debug(fmt("filename = %s", filename))
+    log.debug(fmt("plugins = %s", vim.inspect(plugins)))
     local snapshot_plugins = {}
     local opt, start = plugin_utils.list_installed_plugins()
     local installed = {}
@@ -48,7 +49,7 @@ local function do_snapshot(_, filename, plugins)
         end
       end
     end
-
+    log.debug(fmt("snapshotted_plugins = %s", vim.inspect(snapshot_plugins)))
     local snapshot = "return " .. vim.inspect(snapshot_plugins)
 
 --    local result = await(a.main(function ()
@@ -56,6 +57,7 @@ local function do_snapshot(_, filename, plugins)
 --    end))
 -- Doesn't work using vim.fn.writefile
 
+    log.debug(vim.inspect(snapshot))
     local file, err = io.open(filename, 'w+')
     if err then
       log.warn(err)

@@ -118,75 +118,6 @@ local function require_and_configure(module_name)
   return module
 end
 
----Deletes the snapshot provided
----@param snapshot_path string name of the snapshot or the absolute path
----@return boolean true if success, false if failed
-packer.delete = function (snapshot_path)
-    async(function ()
-        if not util.is_absolute(snapshot_path) then
-            snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
-        end
-        log.info(vim.inspect(snapshot_path))
-        return vim.fn.delete(snapshot_path) == 0
-    end)()
-end
-
----Instantly rolls back to a previous state specified by `filename`
----If `filename` doesn't exist an error will be displayed
----@param snapshot_path string name of the snapshot or the absolute path
-packer.rollback = function(snapshot_path)
-  async(function()
-    if not util.is_absolute(snapshot_path) then
-      snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
-    end
-
-    local snapshotted_plugins = dofile(snapshot_path)
-    for _, plugin in pairs(plugins) do
-      plugin.commit = snapshotted_plugins[plugin.short_name].commit
-    end
---    local start_time = vim.fn.reltime()
---    local results = {}
---    filename = util.join_paths(config.snapshot_path, filename)
---    local f_snapshot, err = io.open(filename, 'r+')
---    if err ~= nil then
---      log.info(err)
---    else
---      local plugins_snapshot = {}
---      for line in f_snapshot:lines() do
---        local short_name, commit = unpack(vim.split(line, ' '))
---        plugins_snapshot[short_name] = commit
---      end
---      f_snapshot:close()
---      for _, plugin in pairs(plugins) do
---        plugin.commit = plugins_snapshot[plugin.short_name]
---        if plugin.type ~= plugin_utils.custom_plugin_type then
---          plugin_types[plugin.type].setup(plugin)
---        end
---      end
---      local missing = await(plugin_utils.find_missing_plugins(plugins))
---      local _, installed_plugins = util.partition(missing, update_plugins)
---      await(a.main)
---      local tasks, display_win = update(plugins, installed_plugins, nil, results)
---      table.insert(tasks, 1, function()
---        return not display.status.running
---      end)
---      table.insert(tasks, 1, config.max_jobs and config.max_jobs or (#tasks - 1))
---      display_win:update_headline_message('updating ' .. #tasks - 2 .. ' / ' .. #tasks - 2 .. ' plugins')
---      a.interruptible_wait_pool(unpack(tasks))
---      local install_paths = {}
---      for plugin_name, r in pairs(results.updates) do
---        if r.ok then
---          table.insert(install_paths, results.plugins[plugin_name].install_path)
---        end
---      end
---      await(a.main)
---      plugin_utils.update_helptags(install_paths)
---      plugin_utils.update_rplugins()
---      local delta = string.gsub(vim.fn.reltimestr(vim.fn.reltime(start_time)), ' ', '')
---      display_win:final_results(results, delta)
---    end
-  end)()
-end
 
 -- Forwards user configuration to sub-modules, resets the set of managed plugins, and ensures that
 -- the necessary package directories exist
@@ -249,6 +180,7 @@ end
 -- TODO: This should be refactored into its own module and the various keys should be implemented
 -- (as much as possible) as ordinary handlers
 local manage = nil
+
 manage = function(plugin_data)
   local plugin_spec = plugin_data.spec
   local spec_line = plugin_data.line
@@ -853,14 +785,88 @@ end
 ---@param snapshot_path string
 packer.snapshot = function(snapshot_path)
   async(function()
+    manage_all_plugins()
+    local fmt = string.format
     if not util.is_absolute(snapshot_path) then
             snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
     end
     log.info(string.format('Taking snapshots of currently installed plugins to %s...', snapshot_path))
-    await(a.main)
+--    await(a.main)
+    log.debug(fmt("plugins = %s", vim.inspect(plugins)))
     await(snapshot(snapshot_path, plugins))
     log.info 'Snapshot complete'
 --    packer.on_complete() --not sure if it should fire packer.on_complete()
+  end)()
+end
+
+---Deletes the snapshot provided
+---@param snapshot_path string name of the snapshot or the absolute path
+---@return boolean true if success, false if failed
+packer.delete = function (snapshot_path)
+    async(function ()
+        if not util.is_absolute(snapshot_path) then
+            snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
+        end
+        log.info(vim.inspect(snapshot_path))
+        return vim.fn.delete(snapshot_path) == 0
+    end)()
+end
+
+---Instantly rolls back to a previous state specified by `filename`
+---If `filename` doesn't exist an error will be displayed
+---@param snapshot_path string name of the snapshot or the absolute path
+packer.rollback = function(snapshot_path)
+  async(function()
+    manage_all_plugins()
+    if not util.is_absolute(snapshot_path) then
+      snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
+    end
+
+    local snapshotted_plugins = dofile(snapshot_path)
+    for _, plugin in pairs(plugins) do
+      plugin.commit = snapshotted_plugins[plugin.short_name].commit
+    end
+--    local start_time = vim.fn.reltime()
+--    local results = {}
+--    filename = util.join_paths(config.snapshot_path, filename)
+--    local f_snapshot, err = io.open(filename, 'r+')
+--    if err ~= nil then
+--      log.info(err)
+--    else
+--      local plugins_snapshot = {}
+--      for line in f_snapshot:lines() do
+--        local short_name, commit = unpack(vim.split(line, ' '))
+--        plugins_snapshot[short_name] = commit
+--      end
+--      f_snapshot:close()
+--      for _, plugin in pairs(plugins) do
+--        plugin.commit = plugins_snapshot[plugin.short_name]
+--        if plugin.type ~= plugin_utils.custom_plugin_type then
+--          plugin_types[plugin.type].setup(plugin)
+--        end
+--      end
+--      local missing = await(plugin_utils.find_missing_plugins(plugins))
+--      local _, installed_plugins = util.partition(missing, update_plugins)
+--      await(a.main)
+--      local tasks, display_win = update(plugins, installed_plugins, nil, results)
+--      table.insert(tasks, 1, function()
+--        return not display.status.running
+--      end)
+--      table.insert(tasks, 1, config.max_jobs and config.max_jobs or (#tasks - 1))
+--      display_win:update_headline_message('updating ' .. #tasks - 2 .. ' / ' .. #tasks - 2 .. ' plugins')
+--      a.interruptible_wait_pool(unpack(tasks))
+--      local install_paths = {}
+--      for plugin_name, r in pairs(results.updates) do
+--        if r.ok then
+--          table.insert(install_paths, results.plugins[plugin_name].install_path)
+--        end
+--      end
+--      await(a.main)
+--      plugin_utils.update_helptags(install_paths)
+--      plugin_utils.update_rplugins()
+--      local delta = string.gsub(vim.fn.reltimestr(vim.fn.reltime(start_time)), ' ', '')
+--      display_win:final_results(results, delta)
+--    end
   end)()
 end
 
