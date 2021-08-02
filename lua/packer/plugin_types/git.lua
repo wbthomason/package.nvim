@@ -19,7 +19,7 @@ local vim = vim
 ---@field updater function
 ---@field name string
 ---@field url string
----@field revert_last function get_rev()
+---@field revert_last function
 ---@field get_rev function
 ---@field type string
 ---@field opt boolean
@@ -64,17 +64,25 @@ end
 ---@return string
 local get_rev = function(plugin)
   local plugin_name = util.get_plugin_full_name(plugin)
-  local get_rev_cmd = config.exec_cmd .. fmt(config.subcommands.get_rev, plugin.install_path)
+
+  local rev_cmd = config.exec_cmd .. config.subcommands.get_rev
+
   return async(function()
-    local rev = await(jobs.run(get_rev_cmd, { capture_output = true })):
-      map_ok(function (ok)
-        local _, rev = next(ok.output.data.stdout)
-        return rev
-    end):map_err(function (err)
+    local rev = await(
+      jobs.run(
+        rev_cmd,
+        { cwd = plugin.install_path, options = { env = git.job_env }, capture_output = true }
+      ))
+    :map_ok(function (ok)
+        local _, r = next(ok.output.data.stdout)
+        return r
+      end)
+    :map_err(function(err)
         local _, msg = fmt("%s: %s",plugin_name,next(err.output.data.stderr))
         error(msg)
         return ""
       end)
+
     return rev.ok
   end)
 end
