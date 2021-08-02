@@ -849,14 +849,16 @@ packer.snapshot_complete = function(lead, _, _)
   return completion_list
 end
 
----Snapshot installed plugins and will be saved in `config.snapshot_path` + `filename`
----@param filename string
-packer.snapshot = function(filename)
+---Snapshots installed plugins
+---@param snapshot_path string
+packer.snapshot = function(snapshot_path)
   async(function()
-    filename = util.join_paths(config.snapshot_path, filename)
-    log.info(string.format('Taking snapshots of currently installed plugins to %s...', filename))
+    if not util.is_absolute(snapshot_path) then
+            snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
+    end
+    log.info(string.format('Taking snapshots of currently installed plugins to %s...', snapshot_path))
     await(a.main)
-    await(snapshot(filename, plugins))
+    await(snapshot(snapshot_path, plugins))
     log.info 'Snapshot complete'
 --    packer.on_complete() --not sure if it should fire packer.on_complete()
   end)()

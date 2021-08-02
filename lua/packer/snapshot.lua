@@ -50,6 +50,12 @@ local function do_snapshot(_, filename, plugins)
     end
 
     local snapshot = "return " .. vim.inspect(snapshot_plugins)
+
+--    local result = await(a.main(function ()
+--      return vim.fn.writefile({snapshot}, filename) == 0
+--    end))
+-- Doesn't work using vim.fn.writefile
+
     local file, err = io.open(filename, 'w+')
     if err then
       log.warn(err)
