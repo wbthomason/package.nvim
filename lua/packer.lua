@@ -121,10 +121,13 @@ end
 --- Instantly rolls back to a previous state specified by `filename`
 ---@param filename string
 packer.rollback = function(filename)
-  local update_plugins = vim.tbl_keys(plugins)
   async(function()
 
-  filename = util.join_paths(config.snapshot_path, filename)
+    filename = util.join_paths(config.snapshot_path, filename)
+    local snapshotted_plugins = dofile(filename)
+    for _, plugin in pairs(plugins) do
+      plugin.commit = snapshotted_plugins[plugin.short_name].commit
+    end
 --    local start_time = vim.fn.reltime()
 --    local results = {}
 --    filename = util.join_paths(config.snapshot_path, filename)
@@ -815,6 +818,7 @@ end
 
 --- Completion for listing snapshots in `snapshot_path`
 --- Intended to provide completion for PackerRollback command
+--- TODO: using vim.fn.readdir to get entries the snapshot directory
 packer.rollback_complete = function(lead, _, _)
   local completion_list = {}
   local res = io.popen('ls ' .. config.snapshot_path, 'r')
@@ -828,7 +832,7 @@ packer.rollback_complete = function(lead, _, _)
   return completion_list
 end
 
----Snapshot installed plugins
+---Snapshot installed plugins and will be saved in `config.snapshot_path` + `filename`
 ---@param filename string
 packer.snapshot = function(filename)
   async(function()
@@ -837,7 +841,7 @@ packer.snapshot = function(filename)
     await(a.main)
     await(snapshot(filename, plugins))
     log.info 'Snapshot complete'
-    packer.on_complete()
+--    packer.on_complete() --not sure if it should fire packer.on_complete()
   end)()
 end
 

@@ -11,9 +11,9 @@ end
 
 ---Serializes a table of git-plugins with `short_name` as table key and another
 ---table with `commit`; the serialized tables will be written in the path `filename`
----provided.
----If there is already a snapshot it will be overwritten
----Snapshotting work only with `git` plugins, other plugins will be ignored.
+---provided, if there is already a snapshot it will be overwritten
+---Snapshotting work only with `plugin_utils.git_plugin_type` type of plugins,
+---other will be ignored.
 ---@param filename string
 ---@param plugins Plugin[]
 ---@return function
