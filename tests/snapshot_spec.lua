@@ -40,6 +40,22 @@ local spec = {'wbthomason/packer.nvim'}
 local cache_path = path:new(config.snapshot_path)
 vim.fn.mkdir(tostring(cache_path), "p")
 
+function parseString(str)
+            local start, i_end, captured = string.find(str, " ")
+
+            log.debug(fmt("start = %s", start))
+            log.debug(fmt("end = %s", i_end))
+            log.debug(fmt("captured = %s", captured))
+
+            local name = string.sub(str, 1, start-1)
+            local commit = string.sub(str, start + 1, str:len()-1)
+            log.debug(fmt("name = %s", name))
+            log.debug(fmt("commit = %s", commit))
+            log.debug(fmt("line = %s", vim.inspect(str)))
+
+            return name, commit
+end
+
 a.describe('Packer testing ', function ()
     local snapshot_name = "test"
     local test_path = path:new(config.snapshot_path .. "/" .. snapshot_name)
@@ -60,23 +76,32 @@ a.describe('Packer testing ', function ()
         end)
 
         it("checking if snapshot content corresponds to plugins'", function ()
-            ---@type string
-            local line = test_path:read()
-            local start, i_end, captured = string.find(line, " ")
-
-            log.debug(fmt("start = %s", start))
-            log.debug(fmt("end = %s", i_end))
-            log.debug(fmt("captured = %s", captured))
-
-            local name = string.sub(line, 1, start-1)
-            local commit = string.sub(line, start + 1, line:len()-1)
-            log.debug(fmt("name = %s", name))
-            log.debug(fmt("commit = %s", commit))
-            log.debug(fmt("line = %s", vim.inspect(line)))
-
-            assert.are.equals("packer.nvim", name)
+--            ---@type string
+--            local line = test_path:read()
+--            local name, commit = parseString(line)
+--            assert.are.equals("packer.nvim", name)
+            local snapshotted_plugins = dofile(tostring(test_path))
+            log.debug(vim.inspect(snapshotted_plugins))
             local expected_rev = await(spec.get_rev())
-            assert.are.equals(expected_rev, commit)
+            assert.are.equals(expected_rev, snapshotted_plugins["packer.nvim"].commit)
+        end)
+    end)
+
+    a.describe('packer.rollback()', function ()
+        local rev = 'c8c0600'
+        a.it(fmt("restore 'packer' to '%s' commit", rev), function ()
+            test_path:read()
+
+            packer.rollback(snapshot_name)
+            p:rm()
+            assert.False(p:exists())
+            await(snapshot(test_path, {spec}))
+
+            local res = with(open(test_path), function (file)
+                return strings.strcharpart(file:read(), 11)
+            end)
+
+            assert.equal(rev, res)
         end)
     end)
 end)

@@ -9,60 +9,59 @@ local function cfg(_config)
   config = _config
 end
 
----Makes a snapshot of all plugins to the path specified by `filename`
+---Serializes a table of git-plugins with `short_name` as table key and another
+---table with `commit`; the serialized tables will be written in the path `filename`
+---provided.
 ---If there is already a snapshot it will be overwritten
 ---Snapshotting work only with `git` plugins, other plugins will be ignored.
 ---@param filename string
 ---@param plugins Plugin[]
 ---@return function
 local function do_snapshot(_, filename, plugins)
-  if type(plugins) ~= "table" then
-    return async(function () end)
-  end
+  assert(type(filename) == "string",
+    fmt("filename needs to be a string but '%s' provided", type(filename)))
+  assert(type(plugins) == "table",
+    fmt("plugins needs to be an array but '%s' provided", type(plugins)))
 
   return async(function()
     log.debug(fmt("filename = %s", filename))
-    local snapshot_content = ''
+    local snapshot_plugins = {}
     local opt, start = plugin_utils.list_installed_plugins()
     local installed = {}
 
     for key, _ in pairs(opt) do installed[key] = key end
     for key, _ in pairs(start) do installed[key] = key end
 
-    log.debug(vim.inspect(plugins))
-    log.debug(fmt("installed= %s", vim.inspect(installed)))
     for _, plugin in pairs(plugins) do
-      log.debug(vim.inspect(plugin))
       if installed[plugin.install_path] ~= nil then -- this plugin is installed
         log.debug(fmt("Snapshotting '%s'", plugin.short_name))
         if plugin.type == plugin_utils.git_plugin_type then
           local rev = await(plugin.get_rev())
 
-          log.debug(vim.inspect(rev))
           if rev == nil then
             local msg = fmt('Snapshotting %s failed', plugin.short_name)
             log.warn(msg)
             error(msg)
           else
-            snapshot_content = snapshot_content .. plugin.short_name .. ' ' .. rev .. '\n'
+            snapshot_plugins[plugin.short_name] = {commit = rev}
           end
         end
       end
     end
 
+    local snapshot = "return " .. vim.inspect(snapshot_plugins)
     local file, err = io.open(filename, 'w+')
-    log.debug(fmt("file = %s", vim.inspect(file)))
-    log.debug(fmt("err = %s", vim.inspect(err)))
     if err then
       log.warn(err)
       error(err)
     else
-      file:write(snapshot_content)
+      file:write(snapshot)
     end
 
     if file ~= nil then
       file:close()
     end
+
     log.debug "Snapshot completed"
   end)
 end
