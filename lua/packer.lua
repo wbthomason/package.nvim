@@ -820,8 +820,11 @@ packer.rollback = function(snapshot_path)
     end
 
     local snapshotted_plugins = dofile(snapshot_path)
+    local f = string.format
     for _, plugin in pairs(plugins) do
-      plugin.commit = snapshotted_plugins[plugin.short_name].commit
+      if snapshotted_plugins[plugin.short_name] then
+        plugin.commit = snapshotted_plugins[plugin.short_name].commit
+      end
     end
 --    local start_time = vim.fn.reltime()
 --    local results = {}
