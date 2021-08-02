@@ -70,5 +70,3 @@ end
 local snapshot = setmetatable({ cfg = cfg }, { __call = do_snapshot })
 
 return snapshot
-
--- vim:sw=2 ts=2 et
