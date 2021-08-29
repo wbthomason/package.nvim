@@ -74,6 +74,24 @@ git.cfg = function(_config)
   ensure_git_env()
 end
 
+
+---Resets a git repo `dest` to `commit`
+---@param dest string
+---@param commit string
+---@return Result
+local function reset(dest, commit)
+    local r = result.ok()
+    async(function()
+      local reset_cmd = config.exec_cmd .. config.subcommands.reset_to
+      r:and_then(
+        await,
+        jobs.run(reset_cmd, { capture_output = true, cwd = dest, options = { env = git.job_env } })
+      )
+      return r
+    end)()
+    return r
+end
+
 ---Gets HEAD commit's hash for `plugin`, nil if `plugin` is not installed
 ---@param plugin Plugin
 ---@return string
@@ -497,7 +515,15 @@ git.setup = function(plugin)
     return r
   end
 
-  ---Returns `self` HEAD's short hash
+  ---Reset the plugin to `plugin.commit`
+  plugin.reset_commit = function ()
+    async(function ()
+      local res = await(reset(install_to, plugin.commit))
+      log.debug(vim.inspect(res))
+    end)()
+  end
+
+  ---Returns HEAD's short hash
   ---@return string
   plugin.get_rev = function()
     return async(function()
