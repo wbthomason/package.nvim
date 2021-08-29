@@ -40,15 +40,27 @@ a.describe("Packer testing git", function ()
 
     a.describe("reset_commit()", function ()
         a.it("of existing plugin", function ()
+            local function reset()
+                local jobs = require 'packer.jobs'
+                local commit = "589af85c954eb530d0a711ff994029fa2c2f10c2"
+                local reset_cmd = fmt("git" .. ' reset --soft %s --', commit)
+                log.debug(reset_cmd)
+                local dest = "./unimi-dl/"
+                local opts = { capture_output = true, cwd = dest }
+                return jobs.run(reset_cmd, opts)
+            end
+
+--            await(reset())
             local packer = require("packer")
             local use = packer.use
             local _packer = packer.startup(function ()
                 use(spec)
             end)
             _packer.__manage_all()
+            spec.commit = "2acfa7264cd96d1184415f99484a5801ebc42046"
             log.info(fmt("spec = %s", vim.inspect(spec)))
-            print(fmt("spec = %s", vim.inspect(spec)))
-            spec.reset_commit()
+            local r = await(spec.reset_commit())
+
         end)
     end)
 

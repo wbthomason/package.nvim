@@ -70,7 +70,8 @@ local config_defaults = {
     keybindings = { quit = 'q', toggle_info = '<CR>', diff = 'd', prompt_revert = 'r' },
   },
   luarocks = { python_cmd = 'python' },
-  log = { level = 'warn' },
+--  log = { level = 'warn' },
+  log = { level = 'trace' },
   profile = { enable = false },
 }
 

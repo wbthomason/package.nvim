@@ -80,16 +80,18 @@ end
 ---@param commit string
 ---@return Result
 local function reset(dest, commit)
-    local r = result.ok()
-    async(function()
-      local reset_cmd = config.exec_cmd .. config.subcommands.reset_to
-      r:and_then(
-        await,
-        jobs.run(reset_cmd, { capture_output = true, cwd = dest, options = { env = git.job_env } })
-      )
-      return r
-    end)()
-    return r
+    local reset_cmd = fmt(config.exec_cmd .. config.subcommands.reset_to, commit)
+    local opts = { capture_output = true, cwd = dest, options = { env = git.job_env } }
+
+    return async(function ()
+      await(jobs.run(reset_cmd, opts))
+      :map_ok(function (ok)
+        log.debug(vim.inspect(ok))
+      end)
+      :map_err(function (err)
+        log.debug(vim.inspect(err))
+      end)
+    end)
 end
 
 ---Gets HEAD commit's hash for `plugin`, nil if `plugin` is not installed
@@ -517,10 +519,9 @@ git.setup = function(plugin)
 
   ---Reset the plugin to `plugin.commit`
   plugin.reset_commit = function ()
-    async(function ()
-      local res = await(reset(install_to, plugin.commit))
-      log.debug(vim.inspect(res))
-    end)()
+    return async(function ()
+      await(reset(install_to, plugin.commit))
+    end)
   end
 
   ---Returns HEAD's short hash
