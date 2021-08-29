@@ -6,14 +6,13 @@ local log = require 'packer.log'
 local result = require 'packer.result'
 
 --- Utility function to make a "standard" logging callback for a given set of tables
--- Arguments:
--- - err_tbl: table to which err messages will be logged
--- - data_tbl: table to which data (non-err messages) will be logged
--- - pipe: the pipe for which this callback will be used. Passed in so that we can make sure all
---      output flushes before finishing reading
--- - disp: optional packer.display object for updating task status. Requires `name`
--- - name: optional string name for a current task. Used to update task status
+---@param err_tbl table table in which err messages will be logged
+---@param data_tbl table table in which data (non-err messages) will be logged
+---@param pipe? any
+---@param disp? Display packer.display object for updating task status. Requires `name`
+---@param name? string name for a current task. Used to update task status
 local function make_logging_callback(err_tbl, data_tbl, pipe, disp, name)
+
   return function(err, data)
     if err then
       table.insert(err_tbl, vim.trim(err))
@@ -107,15 +106,16 @@ end
 
 --- Main exposed function for the jobs module. Takes a task and options and returns an async
 --- function that will run the task with the given opts via vim.loop.spawn
---- Arguments:
 ---@param task string|table either a string or table.
 ---If string, split, and the first component is treated as the
----command. If table, first element is treated as the command.
+---command.
+---If table, first element is treated as the command.
 ---All subsequent elements are passed as args
----@param opts table: table of options. Can include the keys:
---->`options` table (same `options` table as to vim.loop.spawn);
---->`success_test` function (like `was_successful` (above));
---->`capture_output` boolean|table (either a boolean, in which case default
+---@param opts table table of options. Can include the keys:
+--- - `options` table (same `options` table as to
+---[vim.loop.spawn](https://github.com/luvit/luv/blob/master/docs.md#uvspawnpath-options-on_exit));
+--- - `success_test` function (like `was_successful` (above));
+--- - `capture_output` boolean|table (either a boolean, in which case default
 ---output capture is set up and the resulting tables are included in the result,
 ---or a set of tables, in which case output is logged to the given tables).
 ---@return function async
