@@ -66,6 +66,11 @@ local function fix_plugin_types(plugins, plugin_names, results, fs_state)
   log.debug 'Done fixing plugin types'
 end
 
+---Updates plugin
+---@param plugin Plugin
+---@param display_win Display
+---@param results table
+---@return any
 local function update_plugin(plugin, display_win, results)
   local plugin_name = util.get_plugin_full_name(plugin)
   -- TODO: This will have to change when separate packages are implemented
@@ -102,6 +107,13 @@ local function update_plugin(plugin, display_win, results)
   end)
 end
 
+---Updates plugins
+---@param plugins Plugin[]
+---@param update_plugins any
+---@param display_win Display?
+---@param results any
+---@return table
+---@return Display
 local function do_update(_, plugins, update_plugins, display_win, results)
   results = results or {}
   results.updates = results.updates or {}

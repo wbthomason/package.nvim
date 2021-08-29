@@ -1,13 +1,22 @@
 -- TODO: Performance analysis/tuning
 -- TODO: Merge start plugins?
+local a = require 'packer.async'
 local util = require 'packer.util'
+local log = require 'packer.log'
 
 local join_paths = util.join_paths
 local stdpath = vim.fn.stdpath
 
+local async = a.sync
+local await = a.wait
+
 -- Config
 local packer = {}
+
+---@class Config
 local config_defaults = {
+  snapshot = nil,
+  snapshot_path = util.join_paths(vim.fn.stdpath 'cache', 'packer'),
   ensure_dependencies = true,
   package_root = join_paths(stdpath 'data', 'site', 'pack'),
   compile_path = join_paths(stdpath 'config', 'plugin', 'packer_compiled.lua'),
@@ -69,6 +78,7 @@ local config_defaults = {
 _G._packer = _G._packer or {}
 
 local config = vim.tbl_extend('force', {}, config_defaults)
+---@type Plugin[]
 local plugins = nil
 local plugin_specifications = nil
 local rocks = nil
@@ -84,6 +94,7 @@ local configurable_modules = {
   update = false,
   luarocks = false,
   log = false,
+  snapshot = false,
 }
 
 local function require_and_configure(module_name)
@@ -98,9 +109,10 @@ local function require_and_configure(module_name)
   return module
 end
 
---- Initialize packer
+
 -- Forwards user configuration to sub-modules, resets the set of managed plugins, and ensures that
 -- the necessary package directories exist
+---@param user_config Config?
 packer.init = function(user_config)
   user_config = user_config or {}
   config = util.deep_extend('force', config, user_config)
@@ -123,6 +135,9 @@ packer.init = function(user_config)
 end
 
 packer.make_commands = function()
+  vim.cmd [[command! -nargs=+ PackerSnapshot  lua require('packer').snapshot(<q-args>)]]
+  vim.cmd [[command! -nargs=+ -complete=customlist,v:lua.require'packer'.snapshot_complete PackerRollback  lua require('packer').rollback(<q-args>)]]
+  vim.cmd [[command! -nargs=+ -complete=customlist,v:lua.require'packer'.snapshot_complete PackerDelete lua require('packer').delete(<q-args>)]]
   vim.cmd [[command! PackerInstall           lua require('packer').install()]]
   vim.cmd [[command! PackerUpdate            lua require('packer').update()]]
   vim.cmd [[command! PackerSync              lua require('packer').sync()]]
@@ -160,6 +175,7 @@ end
 -- TODO: This should be refactored into its own module and the various keys should be implemented
 -- (as much as possible) as ordinary handlers
 local manage = nil
+
 manage = function(plugin_data)
   local plugin_spec = plugin_data.spec
   local spec_line = plugin_data.line
@@ -769,6 +785,113 @@ packer.loader_complete = function(lead, _, _)
   return completion_list
 end
 
+--- Completion for listing snapshots in `snapshot_path`
+--- Intended to provide completion for PackerRollback command
+--- TODO: using vim.fn.readdir to get entries the snapshot directory
+packer.snapshot_complete = function(lead, _, _)
+  local completion_list = {}
+  local res = io.popen('ls ' .. config.snapshot_path, 'r')
+  for entry in res:lines() do
+    if vim.startswith(entry, lead) then
+      table.insert(completion_list, entry)
+    end
+  end
+  res:close()
+  table.sort(completion_list)
+  return completion_list
+end
+
+---Snapshots installed plugins
+---@param snapshot_path string
+packer.snapshot = function(snapshot_path)
+  async(function()
+
+    local snapshot = require 'packer.snapshot'
+    manage_all_plugins()
+    local fmt = string.format
+    log.debug(fmt('Taking snapshots of currently installed plugins to %s...', snapshot_path))
+    if not util.is_absolute(snapshot_path) then
+            snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
+    end
+    await(snapshot(snapshot_path, plugins))
+    log.debug('Snapshot complete')
+--    packer.on_complete() --not sure if it should fire packer.on_complete()
+  end)()
+end
+
+---Deletes the snapshot provided
+---@param snapshot_path string name of the snapshot or the absolute path
+---@return boolean true if success, false if failed
+packer.delete = function (snapshot_path)
+    async(function ()
+        if not util.is_absolute(snapshot_path) then
+            snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
+        end
+        return vim.fn.delete(snapshot_path) == 0
+    end)()
+end
+
+---Instantly rolls back to a previous state specified by `filename`
+---If `filename` doesn't exist an error will be displayed
+---@param snapshot_path string name of the snapshot or the absolute path
+packer.rollback = function(snapshot_path)
+  async(function()
+    manage_all_plugins()
+    if not util.is_absolute(snapshot_path) then
+      snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
+    end
+
+    local snapshotted_plugins = dofile(snapshot_path)
+    local f = string.format
+    for _, plugin in pairs(plugins) do
+      if snapshotted_plugins[plugin.short_name] then
+        plugin.commit = snapshotted_plugins[plugin.short_name].commit
+      end
+    end
+--    local start_time = vim.fn.reltime()
+--    local results = {}
+--    filename = util.join_paths(config.snapshot_path, filename)
+--    local f_snapshot, err = io.open(filename, 'r+')
+--    if err ~= nil then
+--      log.info(err)
+--    else
+--      local plugins_snapshot = {}
+--      for line in f_snapshot:lines() do
+--        local short_name, commit = unpack(vim.split(line, ' '))
+--        plugins_snapshot[short_name] = commit
+--      end
+--      f_snapshot:close()
+--      for _, plugin in pairs(plugins) do
+--        plugin.commit = plugins_snapshot[plugin.short_name]
+--        if plugin.type ~= plugin_utils.custom_plugin_type then
+--          plugin_types[plugin.type].setup(plugin)
+--        end
+--      end
+--      local missing = await(plugin_utils.find_missing_plugins(plugins))
+--      local _, installed_plugins = util.partition(missing, update_plugins)
+--      await(a.main)
+--      local tasks, display_win = update(plugins, installed_plugins, nil, results)
+--      table.insert(tasks, 1, function()
+--        return not display.status.running
+--      end)
+--      table.insert(tasks, 1, config.max_jobs and config.max_jobs or (#tasks - 1))
+--      display_win:update_headline_message('updating ' .. #tasks - 2 .. ' / ' .. #tasks - 2 .. ' plugins')
+--      a.interruptible_wait_pool(unpack(tasks))
+--      local install_paths = {}
+--      for plugin_name, r in pairs(results.updates) do
+--        if r.ok then
+--          table.insert(install_paths, results.plugins[plugin_name].install_path)
+--        end
+--      end
+--      await(a.main)
+--      plugin_utils.update_helptags(install_paths)
+--      plugin_utils.update_rplugins()
+--      local delta = string.gsub(vim.fn.reltimestr(vim.fn.reltime(start_time)), ' ', '')
+--      display_win:final_results(results, delta)
+--    end
+  end)()
+end
+
 packer.config = config
 
 --- Convenience function for simple setup
@@ -818,6 +941,10 @@ packer.startup = function(spec)
     end
   else
     packer.use(user_plugins)
+  end
+
+  if config.snapshot ~= nil then
+    packer.rollback(config.snapshot)
   end
 
   return packer

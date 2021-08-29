@@ -1,4 +1,10 @@
 -- A simple Result<V, E> type to simplify control flow with installers and updaters
+
+---@class Result
+---@field and_then function(f, ...)
+---@field or_else function()
+---@field map_ok function(f)
+---@field map_err function()
 local result = {}
 
 local ok_result_mt = {

@@ -37,7 +37,9 @@ Have a problem or idea? Make an [issue](https://github.com/wbthomason/packer.nvi
   (determined by looking for `breaking change` or `breaking_change`, case insensitive, in the update
   commit bodies and headers) as `WarningMsg` in the status window.
 - **2021-06-06**: Your Neovim must include https://github.com/neovim/neovim/pull/14659; `packer` uses the `noautocmd` key.
-- **2021-04-19**: `packer` now provides built-in profiling for your config via the `packer_compiled`
+- **2021-04-19**: `packer` now provides built-in profiling fo
+-
+-r your config via the `packer_compiled`
   file. Take a look at [the docs](#profiling) for more information!
 - **2021-02-18**: Having trouble with Luarocks on macOS? See [this issue](https://github.com/wbthomason/packer.nvim/issues/180).
 - **2021-01-19**: Basic Luarocks support has landed! Use the `rocks` key with a string or table to specify packages to install.
@@ -197,6 +199,19 @@ end)
 
 -- Loads opt plugin immediately
 :PackerLoad completion-nvim ale
+
+-- Takes a snapshot of your currently installed plugins. You can pass an absolute
+-- path or a name, in the latter it will be saved to `config.snapshot_path`
+:PackerSnapshot <snapshot name>
+
+-- Deletes a snapshot. You can pass an absolute path or a name
+-- in the latter it look for `snapshot name` in `config.snapshot_path`
+:PackerDelete <snapshot name>
+
+-- Rolls back plugins' commit specified by the `snapshot name`.
+-- The argument can either be an absolute path or a name, in the latter
+-- it will look for `snapshot_name` in `config.snapshot_path`.
+:PackerRollback <snapshot name>
 ```
 
 You can configure Neovim to automatically run `:PackerCompile` whenever `plugins.lua` is updated with an autocommand:
@@ -267,6 +282,8 @@ You may pass a table of configuration values to `packer.init()` to customize its
 default configuration values (and structure of the configuration table) are:
 ```lua
 {
+  snapshot = nil, -- or string that specifies a snapshot inside `snapshot_path` or an absolute path
+  snapshot_path = util.join_paths(vim.fn.stdpath 'cache', 'packer'),
   ensure_dependencies   = true, -- Should packer install plugin dependencies?
   package_root   = util.join_paths(vim.fn.stdpath('data'), 'site', 'pack'),
   compile_path = util.join_paths(vim.fn.stdpath('config'), 'plugin', 'packer_compiled.lua'),
@@ -489,6 +506,20 @@ with `bax` filetype.
 
 Plugins may be lazy-loaded on the use of keybindings/maps. Individual keybindings are specified either as a string (in which case they are treated as normal mode maps) or a table in the format `{mode, map}`.
 
+### Snapshotting
+
+1. Make a snapshot using `:PackerSnapshot <snapshot name>`
+2. Load a snapshot using `:PackerRollback <snapshot name>`
+3. Effectively downgrade your plugins running `:PackerUpdate`
+
+or you can load a given snapshot at startup by setting:
+
+```lua
+config = {
+    snapshot = snapshot_name_or_abs_path
+    ...
+}
+```
 ### Performing plugin management operations
 `packer` exposes the following functions for common plugin management operations. In all of the
 below, `plugins` is an optional table of plugin names; if not provided, the default is "all managed
@@ -499,6 +530,9 @@ plugins":
 - `packer.clean()`: Remove any disabled or no longer managed plugins
 - `packer.sync(plugins)`: Perform a `clean` followed by an `update`
 - `packer.compile(path)`: Compile lazy-loader code and save to `path`.
+- `packer.snapshot(snapshot_name)`: Takes a snapshot of your currently installed plugins
+- `packer.delete(snapshot_name)`: Deletes a snapshot
+- `packer.rollback(snapshot_name)`: Rolls back plugins' commit to the one specified in the snapshot
 
 ### Extending `packer`
 You can add custom key handlers to `packer` by calling `packer.set_handler(name, func)` where `name`
