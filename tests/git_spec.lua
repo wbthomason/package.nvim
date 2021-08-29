@@ -50,7 +50,7 @@ a.describe("Packer testing git", function ()
                 return jobs.run(reset_cmd, opts)
             end
 
---            await(reset())
+            --            await(reset())
             local packer = require("packer")
             local use = packer.use
             local _packer = packer.startup(function ()
@@ -64,5 +64,4 @@ a.describe("Packer testing git", function ()
 
         end)
     end)
-
 end)
