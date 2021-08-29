@@ -1,10 +1,10 @@
 -- A simple Result<V, E> type to simplify control flow with installers and updaters
 
 ---@class Result
----@field and_then function(f, ...)
----@field or_else function()
----@field map_ok function(f)
----@field map_err function()
+---@field public and_then fun(f:function, ...):Result
+---@field public or_else fun(f:function, ...):Result
+---@field public map_ok fun(f: function):Result
+---@field public map_err fun(f:function):Result
 local result = {}
 
 local ok_result_mt = {
@@ -59,6 +59,9 @@ local err_result_mt = {
 
 err_result_mt.__index = err_result_mt
 
+---Creates an ok_result
+---@param val boolean
+---@return Result
 result.ok = function(val)
   if val == nil then
     val = true
@@ -68,6 +71,10 @@ result.ok = function(val)
   return r
 end
 
+
+---Creates an err_result
+---@param err boolean
+---@return Result
 result.err = function(err)
   if err == nil then
     err = true
