@@ -57,9 +57,10 @@ a.describe("Packer testing git", function ()
                 use(spec)
             end)
             _packer.__manage_all()
-            spec.commit = "2acfa7264cd96d1184415f99484a5801ebc42046"
-            log.info(fmt("spec = %s", vim.inspect(spec)))
+            spec.commit = "2acfa72"
             local r = await(spec.reset_commit())
+            local commit = await(spec.get_rev())
+            assert.are.equals(spec.commit, commit)
 
         end)
     end)
