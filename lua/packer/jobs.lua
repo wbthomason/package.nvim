@@ -106,16 +106,19 @@ local function was_successful(r)
 end
 
 --- Main exposed function for the jobs module. Takes a task and options and returns an async
--- function that will run the task with the given opts via vim.loop.spawn
--- Arguments:
---  - task: either a string or table. If string, split, and the first component is treated as the
---    command. If table, first element is treated as the command. All subsequent elements are passed
---    as args
---  - opts: table of options. Can include the keys "options" (like the options table passed to
---    vim.loop.spawn), "success_test" (a function, called like `was_successful` (above)),
---    "capture_output" (either a boolean, in which case default output capture is set up and the
---    resulting tables are included in the result, or a set of tables, in which case output is logged
---    to the given tables)
+--- function that will run the task with the given opts via vim.loop.spawn
+--- Arguments:
+---@param task string|table either a string or table.
+---If string, split, and the first component is treated as the
+---command. If table, first element is treated as the command.
+---All subsequent elements are passed as args
+---@param opts table: table of options. Can include the keys:
+--->`options` table (same `options` table as to vim.loop.spawn);
+--->`success_test` function (like `was_successful` (above));
+--->`capture_output` boolean|table (either a boolean, in which case default
+---output capture is set up and the resulting tables are included in the result,
+---or a set of tables, in which case output is logged to the given tables).
+---@return function async
 local run_job = function(task, opts)
   return a.sync(function()
     local options = opts.options or { hide = true }
