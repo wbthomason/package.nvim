@@ -72,8 +72,6 @@ a.describe('Packer testing ', function ()
     end)
 
     a.describe('packer.rollback()', function ()
-        before_each(function ()
-        end)
         a.it(fmt("restore 'packer' to the commit saved in '%s' snapshot", snapshot_name), function ()
             packer.rollback(snapshot_name)
             log.debug(fmt("spec = %s", vim.inspect(spec)))
