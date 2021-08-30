@@ -70,8 +70,7 @@ local config_defaults = {
     keybindings = { quit = 'q', toggle_info = '<CR>', diff = 'd', prompt_revert = 'r' },
   },
   luarocks = { python_cmd = 'python' },
---  log = { level = 'warn' },
-  log = { level = 'trace' },
+  log = { level = 'warn' },
   profile = { enable = false },
 }
 
@@ -853,7 +852,7 @@ packer.rollback = function(snapshot_path)
         end
       end
       async(function ()
-        plugin.revert()
+        await(plugin.revert())
         packer.on_complete()
       end)()
     end

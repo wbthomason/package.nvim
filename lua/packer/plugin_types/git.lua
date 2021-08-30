@@ -521,10 +521,13 @@ git.setup = function(plugin)
   ---Reset the plugin to `plugin.commit`
   plugin.revert = function ()
     if plugin.commit ~= nil then
-      async(function ()
+      return async(function ()
         await(reset(install_to, plugin.commit))
-      end)()
+      end)
     end
+
+    return async(function ()
+    end)
   end
 
   ---Returns HEAD's short hash
