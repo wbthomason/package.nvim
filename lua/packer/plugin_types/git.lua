@@ -516,11 +516,13 @@ git.setup = function(plugin)
   plugin.revert = function ()
     if plugin.commit ~= nil then
       return async(function ()
+        log.debug(fmt("Reverting '%s' to commit '%s'", plugin.name, plugin.commit))
         await(reset(install_to, plugin.commit))
       end)
     end
 
     return async(function ()
+        log.debug(fmt("'%s' has no commit to revert to", plugin.name))
     end)
   end
 

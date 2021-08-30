@@ -816,6 +816,7 @@ packer.snapshot = function(snapshot_path)
     end
     await(snapshot(snapshot_path, plugins))
     log.info('Snapshot complete')
+    print('Snapshot complete')
     packer.on_complete() --not sure if it should fire packer.on_complete()
   end)()
 end
@@ -843,12 +844,11 @@ packer.rollback = function(snapshot_path)
     end
 
     local snapshotted_plugins = dofile(snapshot_path)
-    local f = string.format
     for _, plugin in pairs(plugins) do
       if snapshotted_plugins[plugin.short_name] then
-        local snapshot_plugin = snapshotted_plugins[plugin.short_name].commit
-        if snapshot_plugin ~= nil then
-            plugin.commit = snapshot_plugin.commit
+        local snapshot_commit = snapshotted_plugins[plugin.short_name].commit
+        if snapshot_commit ~= nil then
+            plugin.commit = snapshot_commit
         end
       end
       async(function ()
@@ -856,48 +856,8 @@ packer.rollback = function(snapshot_path)
         packer.on_complete()
       end)()
     end
-    log.info("Rollback complete")
---    local start_time = vim.fn.reltime()
---    local results = {}
---    filename = util.join_paths(config.snapshot_path, filename)
---    local f_snapshot, err = io.open(filename, 'r+')
---    if err ~= nil then
---      log.info(err)
---    else
---      local plugins_snapshot = {}
---      for line in f_snapshot:lines() do
---        local short_name, commit = unpack(vim.split(line, ' '))
---        plugins_snapshot[short_name] = commit
---      end
---      f_snapshot:close()
---      for _, plugin in pairs(plugins) do
---        plugin.commit = plugins_snapshot[plugin.short_name]
---        if plugin.type ~= plugin_utils.custom_plugin_type then
---          plugin_types[plugin.type].setup(plugin)
---        end
---      end
---      local missing = await(plugin_utils.find_missing_plugins(plugins))
---      local _, installed_plugins = util.partition(missing, update_plugins)
---      await(a.main)
---      local tasks, display_win = update(plugins, installed_plugins, nil, results)
---      table.insert(tasks, 1, function()
---        return not display.status.running
---      end)
---      table.insert(tasks, 1, config.max_jobs and config.max_jobs or (#tasks - 1))
---      display_win:update_headline_message('updating ' .. #tasks - 2 .. ' / ' .. #tasks - 2 .. ' plugins')
---      a.interruptible_wait_pool(unpack(tasks))
---      local install_paths = {}
---      for plugin_name, r in pairs(results.updates) do
---        if r.ok then
---          table.insert(install_paths, results.plugins[plugin_name].install_path)
---        end
---      end
---      await(a.main)
---      plugin_utils.update_helptags(install_paths)
---      plugin_utils.update_rplugins()
---      local delta = string.gsub(vim.fn.reltimestr(vim.fn.reltime(start_time)), ' ', '')
---      display_win:final_results(results, delta)
---    end
+    log.info('Rollback complete')
+    print('Rollback complete')
   end)()
 end
 
