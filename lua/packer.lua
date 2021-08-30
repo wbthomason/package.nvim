@@ -815,7 +815,7 @@ packer.snapshot = function(snapshot_path)
             snapshot_path = util.join_paths(config.snapshot_path, snapshot_path)
     end
     await(snapshot(snapshot_path, plugins))
-    log.debug('Snapshot complete')
+    log.info('Snapshot complete')
     packer.on_complete() --not sure if it should fire packer.on_complete()
   end)()
 end
@@ -856,7 +856,7 @@ packer.rollback = function(snapshot_path)
         packer.on_complete()
       end)()
     end
-    print("Rollback complete")
+    log.info("Rollback complete")
 --    local start_time = vim.fn.reltime()
 --    local results = {}
 --    filename = util.join_paths(config.snapshot_path, filename)

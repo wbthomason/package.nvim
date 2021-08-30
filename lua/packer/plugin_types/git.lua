@@ -86,12 +86,6 @@ local function reset(dest, commit)
 
     return async(function ()
       await(jobs.run(reset_cmd, opts))
-      :map_ok(function (ok)
-        log.debug(vim.inspect(ok))
-      end)
-      :map_err(function (err)
-        log.debug(vim.inspect(err))
-      end)
     end)
 end
 
