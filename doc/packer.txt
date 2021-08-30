@@ -547,7 +547,7 @@ delete()		                                *packer.delete()*
 `delete` deletes a snapshot given the name or the absolute path
 
 rollback()		                                *packer.rollback()*
-`rollback` reverts all plugins' commit to the one specified by the snapshot
+`rollback` reverts all plugins to the commit specified in the snapshot
 
 use()		                                       *packer.use()*
 `use` allows you to add one or more plugins to the managed set. It can be

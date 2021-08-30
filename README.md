@@ -510,7 +510,6 @@ Plugins may be lazy-loaded on the use of keybindings/maps. Individual keybinding
 
 1. Make a snapshot using `:PackerSnapshot <snapshot name>`
 2. Load a snapshot using `:PackerRollback <snapshot name>`
-3. Effectively downgrade your plugins running `:PackerUpdate`
 
 or you can load a given snapshot at startup by setting:
 
