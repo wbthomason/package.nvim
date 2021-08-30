@@ -47,7 +47,7 @@ local config_defaults = {
       get_bodies = 'log --color=never --pretty=format:"===COMMIT_START===%h%n%s===BODY_START===%b" --no-show-signature HEAD@{1}...HEAD',
       submodules = 'submodule update --init --recursive --progress',
       revert = 'reset --hard HEAD@{1}',
-      reset_to = 'reset --soft %s --',
+      revert_to = 'reset --hard %s --',
     },
     depth = 1,
     clone_timeout = 60,
@@ -817,7 +817,7 @@ packer.snapshot = function(snapshot_path)
     end
     await(snapshot(snapshot_path, plugins))
     log.debug('Snapshot complete')
---    packer.on_complete() --not sure if it should fire packer.on_complete()
+    packer.on_complete() --not sure if it should fire packer.on_complete()
   end)()
 end
 
@@ -847,9 +847,17 @@ packer.rollback = function(snapshot_path)
     local f = string.format
     for _, plugin in pairs(plugins) do
       if snapshotted_plugins[plugin.short_name] then
-        plugin.commit = snapshotted_plugins[plugin.short_name].commit
+        local snapshot_plugin = snapshotted_plugins[plugin.short_name].commit
+        if snapshot_plugin ~= nil then
+            plugin.commit = snapshot_plugin.commit
+        end
       end
+      async(function ()
+        plugin.revert()
+        packer.on_complete()
+      end)()
     end
+    print("Rollback complete")
 --    local start_time = vim.fn.reltime()
 --    local results = {}
 --    filename = util.join_paths(config.snapshot_path, filename)

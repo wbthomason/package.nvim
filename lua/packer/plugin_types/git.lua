@@ -19,6 +19,7 @@ local vim = vim
 ---@field updater function
 ---@field name string
 ---@field url string
+---@field revert function Reverts the plugin to `plugin.commit` if it's not `nil`
 ---@field revert_last function
 ---@field get_rev function
 ---@field type string
@@ -80,7 +81,7 @@ end
 ---@param commit string
 ---@return Result
 local function reset(dest, commit)
-    local reset_cmd = fmt(config.exec_cmd .. config.subcommands.reset_to, commit)
+    local reset_cmd = fmt(config.exec_cmd .. config.subcommands.revert_to, commit)
     local opts = { capture_output = true, cwd = dest, options = { env = git.job_env } }
 
     return async(function ()
@@ -518,10 +519,12 @@ git.setup = function(plugin)
   end
 
   ---Reset the plugin to `plugin.commit`
-  plugin.reset_commit = function ()
-    return async(function ()
-      await(reset(install_to, plugin.commit))
-    end)
+  plugin.revert = function ()
+    if plugin.commit ~= nil then
+      async(function ()
+        await(reset(install_to, plugin.commit))
+      end)()
+    end
   end
 
   ---Returns HEAD's short hash
