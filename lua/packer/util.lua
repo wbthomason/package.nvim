@@ -138,4 +138,13 @@ util.float = function(opts)
   return true, win, buf
 end
 
+---Finds whether the `path` provided is absolute, `true` if it is otherwise `false`
+---@param path string
+---@return boolean
+util.is_absolute = function (path)
+    assert(type(path) == "string", string.format("path expected to be string but '%s' provided", type(path)))
+    local res = vim.split(path, util.get_separator(), true)
+    return #res > 1
+end
+
 return util

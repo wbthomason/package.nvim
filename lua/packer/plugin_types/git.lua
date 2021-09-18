@@ -2,12 +2,29 @@ local util = require 'packer.util'
 local jobs = require 'packer.jobs'
 local a = require 'packer.async'
 local result = require 'packer.result'
+local log = require 'packer.log'
 local await = a.wait
 local async = a.sync
 local fmt = string.format
 
 local vim = vim
 
+---@class Plugin
+---@field [1] string @name of the plugin
+---@field commit string
+---@field diff string
+---@field short_name string
+---@field path string
+---@field install_path string
+---@field updater function
+---@field name string
+---@field url string
+---@field revert function Reverts the plugin to `plugin.commit` if it's not `nil`
+---@field revert_last function
+---@field get_rev function
+---@field type string
+---@field opt boolean
+---@field disable boolean
 local git = {}
 
 local blocked_env_vars = {
@@ -49,12 +66,55 @@ local function mark_breaking_commits(plugin, commit_bodies)
 end
 
 local config = nil
+
 git.cfg = function(_config)
   config = _config.git
   config.base_dir = _config.package_root
   config.default_base_dir = util.join_paths(config.base_dir, _config.plugin_package)
   config.exec_cmd = config.cmd .. ' '
   ensure_git_env()
+end
+
+
+---Resets a git repo `dest` to `commit`
+---@param dest string
+---@param commit string
+---@return Result
+local function reset(dest, commit)
+    local reset_cmd = fmt(config.exec_cmd .. config.subcommands.revert_to, commit)
+    local opts = { capture_output = true, cwd = dest, options = { env = git.job_env } }
+
+    return async(function ()
+      await(jobs.run(reset_cmd, opts))
+    end)
+end
+
+---Gets HEAD commit's hash for `plugin`, nil if `plugin` is not installed
+---@param plugin Plugin
+---@return string
+local get_rev = function(plugin)
+  local plugin_name = util.get_plugin_full_name(plugin)
+
+  local rev_cmd = config.exec_cmd .. config.subcommands.get_rev
+
+  return async(function()
+    local rev = await(
+      jobs.run(
+        rev_cmd,
+        { cwd = plugin.install_path, options = { env = git.job_env }, capture_output = true }
+      ))
+    :map_ok(function (ok)
+        local _, r = next(ok.output.data.stdout)
+        return r
+      end)
+    :map_err(function(err)
+        local _, msg = fmt("%s: %s",plugin_name,next(err.output.data.stderr))
+        error(msg)
+        return ""
+      end)
+
+    return rev.ok
+  end)
 end
 
 local handle_checkouts = function(plugin, dest, disp)
@@ -227,8 +287,8 @@ git.setup = function(plugin)
           { capture_output = true, cwd = plugin.install_path, options = { env = git.job_env } }
         )
       ):map_ok(function(data)
-        return { remote = data.output.data.stdout[1] }
-      end)
+          return { remote = data.output.data.stdout[1] }
+        end)
     end)
   end
 
@@ -251,13 +311,13 @@ git.setup = function(plugin)
           { success_test = exit_ok, capture_output = rev_callbacks, cwd = install_to, options = { env = git.job_env } }
         )
       ):map_err(function(err)
-        plugin.output = { err = vim.list_extend(update_info.err, update_info.revs), data = {} }
+          plugin.output = { err = vim.list_extend(update_info.err, update_info.revs), data = {} }
 
-        return {
-          msg = fmt('Error getting current commit for %s: %s', plugin_name, table.concat(update_info.revs, '\n')),
-          data = err,
-        }
-      end)
+          return {
+            msg = fmt('Error getting current commit for %s: %s', plugin_name, table.concat(update_info.revs, '\n')),
+            data = err,
+          }
+        end)
 
       local current_branch
       disp:task_update(plugin_name, 'checking current branch...')
@@ -453,6 +513,29 @@ git.setup = function(plugin)
       return r
     end)()
     return r
+  end
+
+  ---Reset the plugin to `plugin.commit`
+  plugin.revert = function ()
+    if plugin.commit ~= nil then
+      return async(function ()
+        log.debug(fmt("Reverting '%s' to commit '%s'", plugin.name, plugin.commit))
+        await(reset(install_to, plugin.commit))
+      end)
+    end
+
+    return async(function ()
+        log.debug(fmt("'%s' has no commit to revert to", plugin.name))
+    end)
+  end
+
+  ---Returns HEAD's short hash
+  ---@return string
+  plugin.get_rev = function()
+    return async(function()
+      local res = await(get_rev(plugin))
+      return res
+    end)
   end
 end
 

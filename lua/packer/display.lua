@@ -199,6 +199,7 @@ local function prompt_user(headline, body, callback)
   )
 end
 
+---@class Display
 local display = {}
 local display_mt = {
   --- Check if we have a valid display window

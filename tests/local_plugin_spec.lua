@@ -3,6 +3,7 @@ local await = require('packer.async').wait
 local local_plugin = require('packer.plugin_types.local')
 local packer_path = vim.fn.stdpath('data') .. '/site/pack/packer/start/'
 local helpers = require('tests.helpers')
+local log = require('packer.log')
 
 a.describe('Local plugin -', function()
   a.describe('installer', function()
@@ -27,6 +28,7 @@ a.describe('Local plugin -', function()
       local_plugin.setup(plugin_spec)
       await(plugin_spec.installer({task_update = function() end}))
 
+      log.info(vim.loop.fs_lstat(plugin_install_path).type)
       assert.equal('link', vim.loop.fs_lstat(plugin_install_path).type)
     end)
   end)
